@@ -140,7 +140,7 @@
     <div style="font-size:52px">😈🐾</div>
     <h1>PARTYING TULSA</h1>
     <p><b>Get paid to hang out and party with people right here in Tulsa.</b></p>
-    <p style="margin-top:0">Ladies: sign up, set your own price, and get paid when you meet up. Guys pay to hang out and party. This is legit — no bullshit. First meets are always in a public place, every lady is ID-checked 18+, the launch deal takes 0% so you keep every dollar, and you can always say no to anything. First meet is 25 minutes — the meet and greet. After that, one hour at a time, one block at a time, and you can end the meet whenever you want.</p>
+    <p style="margin-top:0">Ladies: sign up, set your own price, and get paid when you meet up. Guys pay to hang out and party. This is legit — no bullshit. First meets are always in a public place, every lady is ID-checked 18+, the launch deal takes 0% so you keep every dollar, and you can always say no to anything. First you pay for a 15-minute meet and greet — just enough to meet her and see if you click. Then you decide: the hangout is one hour at a time, one block at a time, and she can end the meet whenever you want.</p>
     <div class="detail" style="border:2px solid #ff2e88; background:linear-gradient(160deg, rgba(255,46,136,.14), rgba(255,36,66,.06)); box-shadow:0 0 26px rgba(255,46,136,.35), inset 0 1px 0 rgba(255,255,255,.07)">
       <h3 style="color:#ff8ac2; font-size:18px">🔗 ⭐ YOUR LINKS — AND YOUR PHOTOS STAY HIDDEN ⭐</h3>
       <p><b>Nobody can see your photos for free.</b> The whole world sees only your teaser: your second photo and a few words about you. Your real photo, your price, and your full profile stay <b>HIDDEN</b>.</p>
@@ -235,7 +235,7 @@
 </div>
 
 <h2 class="sec">🐾 THE LADIES</h2>
-<p class="sub">Every lady here set her own price per time. Tap her helper button and tell the helper the plan — the helper talks to her, sets the meet, and keeps both sides covered. First meet is 25 minutes — the meet and greet. After that, one hour at a time. You can only pay for one block at a time, and she can end the meet whenever she wants.</p>
+<p class="sub">Every lady here set her own price per time. Tap her helper button and tell the helper the plan — the helper talks to her, sets the meet, and keeps both sides covered. First: a 15-minute meet and greet — you pay for 15 minutes to meet her. Then you decide — the hangout is one hour at a time. You can only pay for one block at a time, and she can end the meet whenever she wants.</p>
 <div class="grid" id="grid"></div>
 
 <h2 class="sec">😈 LADIES — MAKE YOUR PROFILE</h2>
@@ -554,11 +554,11 @@
 
   var FEE_PCT = 5;
   // HOURLY BLOCKS — one block at a time, and she can always end it.
-  // First meet of a booking: FIRST_BLOCK_MIN minutes — the meet and greet (25).
+  // First meet of a booking: FIRST_BLOCK_MIN minutes — the meet and greet (15).
   // Every block after that: BLOCK_MIN minutes (1 hour) — the hangout.
   // be bought once the current block's time is up — nobody can pay ahead for
   // hours she hasn't agreed to yet, so she is never obligated to stay longer.
-  var FIRST_BLOCK_MIN = 25;
+  var FIRST_BLOCK_MIN = 15;
   var BLOCK_MIN = 60;
   var PAYPAL_CLIENT_ID = ""; // Chris's PayPal app client ID goes here. It is a PUBLIC id (it prints on every PayPal checkout page) — the second it is filled in, the pay button becomes a REAL PayPal hold: PayPal itself holds the money until release.
   var _ppLoading = false;
@@ -652,7 +652,7 @@
     var fee = Math.round(total * FEE_PCT) / 100;
     return {mins: mins, total: total, fee: fee, toHer: Math.round((total - fee) * 100) / 100};
   }
-  // Pay for the next block: 25 minutes first (the meet and greet), then 1 hour at a time.
+  // Pay for the next block: 15 minutes first (the meet and greet), then 1 hour at a time.
   // Refuses if a block is already running — the next hour only unlocks
   // when the current time is up.
   function payBlock(slug, price) {
@@ -716,7 +716,7 @@
       '<button class="claimbtn" onclick="payBlock(\'' + p.slug + '\',' + price + ')">' + btn + '</button>';
     if (last && last.state === "UP") html = '<div class="meta">⏰ <b>Time\'s up</b> — she is free to go. If you both want more time, the next block is a 1-hour hangout.</div>' + html;
     if (last && last.state === "ENDED") html = '<div class="meta">She ended the meet. A new meet starts with a ' + FIRST_BLOCK_MIN + '-minute first block.</div>' + html;
-    if (!last) html = '<div class="meta">One block at a time: you pay for the ' + FIRST_BLOCK_MIN + '-minute meet and greet first, so she can change her mind. After that, one hour at a time — the next hour only unlocks when the time is up.</div>' + html;
+    if (!last) html = '<div class="meta">One block at a time: you pay for the ' + FIRST_BLOCK_MIN + '-minute meet and greet first — just enough to meet her and see if you click. Then you decide: pay for the longer hangout, one hour at a time. The next hour only unlocks when the time is up.</div>' + html;
     return html;
   }
   function toggleEdit(slug) {
@@ -933,7 +933,7 @@
           '<div id="pay-' + (p.slug || '') + '" style="display:none; margin-top:8px">' +
           '<div id="blockbox-' + (p.slug || '') + '">' + blockHTML(p) + '</div>' +
           '<div id="pp-' + (p.slug || '') + '" style="margin-top:8px"></div>' +
-          '<div class="meta">How it works: your PayPal payment is HELD, not sent to her. After the date is over and she verifies it happened, the house takes ' + FEE_PCT + '% and the rest releases to her. No date, no release.</div>' +
+          '<div class="meta">How it works: <b>first you pay for a 15-minute meet and greet</b> — just enough to meet her and see if you click. <b>Then you decide</b> — if you both want more time, you pay for the longer hangout, one hour at a time. You can only ever pay for one block at a time, and she can end the meet whenever she wants. Your PayPal payment is HELD, not sent to her. After the date is over and she verifies it happened, the house takes ' + FEE_PCT + '% and the rest releases to her. No date, no release.</div>' +
           '</div>') +
         paysHTML(p) +
         linksHtml +
