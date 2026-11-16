@@ -140,7 +140,7 @@
     <div style="font-size:52px">😈🐾</div>
     <h1>PARTYING TULSA</h1>
     <p><b>Get paid to hang out and party with people right here in Tulsa.</b></p>
-    <p style="margin-top:0">Ladies: sign up, set your own price, and get paid when you meet up. Guys pay to hang out and party. This is legit — no bullshit. First meets are always in a public place, every lady is ID-checked 18+, the launch deal takes 0% so you keep every dollar, and you can always say no to anything.</p>
+    <p style="margin-top:0">Ladies: sign up, set your own price, and get paid when you meet up. Guys pay to hang out and party. This is legit — no bullshit. First meets are always in a public place, every lady is ID-checked 18+, the launch deal takes 0% so you keep every dollar, and you can always say no to anything. First meet is 30 minutes — after that, one hour at a time, one block at a time, and you can end the meet whenever you want.</p>
     <div class="detail" style="border:2px solid #ff2e88; background:linear-gradient(160deg, rgba(255,46,136,.14), rgba(255,36,66,.06)); box-shadow:0 0 26px rgba(255,46,136,.35), inset 0 1px 0 rgba(255,255,255,.07)">
       <h3 style="color:#ff8ac2; font-size:18px">🔗 ⭐ YOUR LINKS — AND YOUR PHOTOS STAY HIDDEN ⭐</h3>
       <p><b>Nobody can see your photos for free.</b> The whole world sees only your teaser: your second photo and a few words about you. Your real photo, your price, and your full profile stay <b>HIDDEN</b>.</p>
@@ -235,7 +235,7 @@
 </div>
 
 <h2 class="sec">🐾 THE LADIES</h2>
-<p class="sub">Every lady here set her own price per time. Tap her helper button and tell the helper the plan — the helper talks to her, sets the meet, and keeps both sides covered.</p>
+<p class="sub">Every lady here set her own price per time. Tap her helper button and tell the helper the plan — the helper talks to her, sets the meet, and keeps both sides covered. First meet is 30 minutes — after that, one hour at a time. You can only pay for one block at a time, and she can end the meet whenever she wants.</p>
 <div class="grid" id="grid"></div>
 
 <h2 class="sec">😈 LADIES — MAKE YOUR PROFILE</h2>
@@ -431,7 +431,7 @@
     catch (e) { return []; }
   }
 
-  var BASE = "https://projecthop.github.io/cyber-red-localhost-terminal/females/females.html";
+  var BASE = "https://toptotop94.github.io/Partyingcity/females/females.html";
 
   function newKey() { return Math.random().toString(36).slice(2, 8); }
 
@@ -553,6 +553,13 @@
   }
 
   var FEE_PCT = 5;
+  // HOURLY BLOCKS — one block at a time, and she can always end it.
+  // First meet of a booking: FIRST_BLOCK_MIN minutes (change to 25 to make it 25).
+  // Every block after that: BLOCK_MIN minutes (1 hour). A new block can only
+  // be bought once the current block's time is up — nobody can pay ahead for
+  // hours she hasn't agreed to yet, so she is never obligated to stay longer.
+  var FIRST_BLOCK_MIN = 30;
+  var BLOCK_MIN = 60;
   var PAYPAL_CLIENT_ID = ""; // Chris's PayPal app client ID goes here. It is a PUBLIC id (it prints on every PayPal checkout page) — the second it is filled in, the pay button becomes a REAL PayPal hold: PayPal itself holds the money until release.
   var _ppLoading = false;
   function guyName() {
@@ -603,6 +610,114 @@
   }
   function savePays(pays) {
     try { localStorage.setItem("ft_pays", JSON.stringify(pays)); } catch (e) {}
+  }
+  // ---- Hourly blocks: one block at a time, she can always end it ----
+  // A block is one paid chunk of time: the first block of a meet is
+  // FIRST_BLOCK_MIN minutes, every block after that is BLOCK_MIN (1 hour).
+  // Stored in localStorage "ft_blocks" so the timer survives a refresh.
+  function getBlocks() {
+    try { return JSON.parse(localStorage.getItem("ft_blocks") || "[]"); }
+    catch (e) { return []; }
+  }
+  function saveBlocks(blocks) {
+    try { localStorage.setItem("ft_blocks", JSON.stringify(blocks)); } catch (e) {}
+  }
+  function fmtLeft(ms) {
+    if (ms <= 0) return "0:00";
+    var s = Math.floor(ms / 1000);
+    return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+  }
+  function sweepBlocks() {
+    var blocks = getBlocks();
+    var changed = false;
+    var now = Date.now();
+    blocks.forEach(function(b){
+      if (b.state === "ACTIVE" && now >= b.endsAt) { b.state = "UP"; changed = true; }
+    });
+    if (changed) saveBlocks(blocks);
+    return blocks;
+  }
+  function activeBlock(slug) {
+    var found = null;
+    sweepBlocks().forEach(function(b){ if (b.slug === slug && b.state === "ACTIVE") found = b; });
+    return found;
+  }
+  function lastBlock(slug) {
+    var found = null;
+    sweepBlocks().forEach(function(b){ if (b.slug === slug) found = b; });
+    return found;
+  }
+  function blockPrice(price, mins) {
+    var total = Math.round(price * mins / 60 * 100) / 100;
+    var fee = Math.round(total * FEE_PCT) / 100;
+    return {mins: mins, total: total, fee: fee, toHer: Math.round((total - fee) * 100) / 100};
+  }
+  // Pay for the next block: 30 minutes first, then 1 hour at a time.
+  // Refuses if a block is already running — the next hour only unlocks
+  // when the current time is up.
+  function payBlock(slug, price) {
+    if (activeBlock(slug)) { alert("A block is already running for her — the next hour unlocks when this time is up."); return; }
+    var last = lastBlock(slug);
+    var isFirst = !last || last.state === "ENDED";
+    var mins = isFirst ? FIRST_BLOCK_MIN : BLOCK_MIN;
+    var c = blockPrice(price, mins);
+    c.hrs = mins / 60;
+    var el = document.getElementById("calc-" + slug);
+    if (el) el.innerHTML = "You pay <b>$" + c.total.toFixed(2) + "</b> — held safe, not sent yet.<br>" +
+      "After the date is over and she verifies it: <b>$" + c.toHer.toFixed(2) + "</b> goes to her, <b>$" + c.fee.toFixed(2) + "</b> (" + FEE_PCT + "%) stays with the house.";
+    var done = function(ppId) {
+      var now = Date.now();
+      var blocks = getBlocks();
+      blocks.push({slug: slug, guy: guyName(), blockNo: (last ? last.blockNo : 0) + 1, mins: mins, total: c.total, fee: c.fee, toHer: c.toHer, state: "ACTIVE", startedAt: now, endsAt: now + mins * 60000, pp: ppId || ""});
+      saveBlocks(blocks);
+      c.endsAt = now + mins * 60000;
+      recordHeld(slug, c, ppId);
+      render();
+      setTimeout(function(){ alert(isFirst ? ("First block paid — " + mins + " minutes, held safe. She can end it any time, and the next hour only unlocks when this time is up.") : "Another hour paid — held safe. One block at a time, and she can end it any time."); }, 200);
+    };
+    if (PAYPAL_CLIENT_ID) { paypalHoldC(slug, c, done); return; }
+    done("");
+  }
+  // Her button: end the meet right now. No further payment is due and she
+  // is never obligated to stay longer. The held pay for time already spent
+  // is still hers to verify and release.
+  function endBlockNow(slug) {
+    var blocks = getBlocks();
+    var done = false;
+    for (var i = blocks.length - 1; i >= 0; i--) {
+      if (blocks[i].slug === slug && blocks[i].state === "ACTIVE") {
+        blocks[i].state = "ENDED"; blocks[i].endedAt = Date.now(); done = true; break;
+      }
+    }
+    if (!done) { render(); return; }
+    saveBlocks(blocks);
+    render();
+    setTimeout(function(){ alert("Meet ended. No further payment is due — you were never obligated to stay longer than you wanted. You can still verify and release the held pay for the time you spent."); }, 200);
+  }
+  // What the pay panel shows for this lady, depending on her blocks.
+  function blockHTML(p) {
+    var price = p.price;
+    var last = lastBlock(p.slug);
+    var active = activeBlock(p.slug);
+    if (active) {
+      return '<div class="meta">⏱ <b>Time left in this block: <span data-blocktimer="' + active.endsAt + '">--:--</span></b></div>' +
+        '<div class="meta">She can end the meet any time — she is never obligated to stay longer than she wants.</div>' +
+        '<button class="claimbtn" disabled style="opacity:.5">Next hour unlocks when this time is up</button>';
+    }
+    var isFirst = !last || last.state === "ENDED";
+    var mins = isFirst ? FIRST_BLOCK_MIN : BLOCK_MIN;
+    var c = blockPrice(price, mins);
+    var label = isFirst ? ("First meet — " + mins + " minutes") : "Another hour — 60 minutes";
+    var btn = isFirst ? ("Pay $" + c.total.toFixed(2) + " for the first " + mins + " min — hold my payment")
+                      : ("Pay $" + c.total.toFixed(2) + " for another hour — hold my payment");
+    var html = '<div class="meta"><b>' + label + '</b> — $' + c.total.toFixed(2) + ' (her rate is $' + price + ' / hour).</div>' +
+      '<div class="meta" id="calc-' + p.slug + '">You pay <b>$' + c.total.toFixed(2) + '</b> — held safe, not sent yet.<br>' +
+      'After the date is over and she verifies it: <b>$' + c.toHer.toFixed(2) + '</b> goes to her, <b>$' + c.fee.toFixed(2) + '</b> (' + FEE_PCT + '%) stays with the house.</div>' +
+      '<button class="claimbtn" onclick="payBlock(\'' + p.slug + '\',' + price + ')">' + btn + '</button>';
+    if (last && last.state === "UP") html = '<div class="meta">⏰ <b>Time\'s up</b> — she is free to go. If you both want more time, the next block is one hour.</div>' + html;
+    if (last && last.state === "ENDED") html = '<div class="meta">She ended the meet. A new meet starts with a ' + FIRST_BLOCK_MIN + '-minute first block.</div>' + html;
+    if (!last) html = '<div class="meta">One block at a time: you pay for ' + FIRST_BLOCK_MIN + ' minutes first, so she can change her mind. After that, one hour at a time — the next hour only unlocks when the time is up.</div>' + html;
+    return html;
   }
   function toggleEdit(slug) {
     var el = document.getElementById("edit-" + slug);
@@ -721,11 +836,18 @@
         if (pay.state === "HELD") {
           html += '<div class="meta" style="margin-top:8px">💰 ' + esc(pay.guy) + ' paid <b>$' + pay.total.toFixed(2) + '</b> for ' + pay.hrs + ' hr — HELD until the date is over and you verify it.' + (pay.pp ? ' Held inside PayPal itself.' : '') + ' ' +
             '<button class="claimbtn" onclick="releasePay(' + i + ')">Date is over — verify & release my pay</button></div>';
+          var blk = activeBlock(p.slug);
+          if (blk) {
+            html += '<div class="meta" style="margin-top:8px">⏱ Time left in this block: <b><span data-blocktimer="' + blk.endsAt + '">--:--</span></b> — you can end it any time.</div>' +
+              '<button class="claimbtn" onclick="endBlockNow(\'' + p.slug + '\')">End the meet now — I\'m done</button>';
+          }
         } else {
           html += '<div class="meta" style="margin-top:8px">✅ Paid out: <b>$' + pay.toHer.toFixed(2) + '</b> to you, $' + pay.fee.toFixed(2) + ' house fee (' + FEE_PCT + '%).</div>';
         }
       } else if (pay.state === "HELD") {
         html += '<div class="meta" style="margin-top:8px">💰 Your payment of <b>$' + pay.total.toFixed(2) + '</b> is HELD — it releases to her after the date is over and she verifies it.</div>';
+        var blk2 = activeBlock(p.slug);
+        if (blk2) html += '<div class="meta" style="margin-top:8px">⏱ Time left in this block: <b><span data-blocktimer="' + blk2.endsAt + '">--:--</span></b> — she can end the meet any time.</div>';
       } else {
         html += '<div class="meta" style="margin-top:8px">✅ Your payment was released to her after the meetup.</div>';
       }
@@ -809,9 +931,7 @@
         (isMine(p) ? "" :
           '<button class="claimbtn" onclick="togglePay(\'' + (p.slug || '') + '\')">💳 Pay for a meetup</button>' +
           '<div id="pay-' + (p.slug || '') + '" style="display:none; margin-top:8px">' +
-          '<div class="meta">Hours: <input id="hrs-' + (p.slug || '') + '" type="number" min="1" max="12" value="1" style="width:70px" onchange="payCalc(\'' + (p.slug || '') + '\',' + p.price + ')"></div>' +
-          '<div class="meta" id="calc-' + (p.slug || '') + '">You pay <b>$' + p.price.toFixed(2) + '</b> — held safe, not sent yet.<br>After the date is over and she verifies it: <b>$' + (p.price - Math.round(p.price * FEE_PCT) / 100).toFixed(2) + '</b> goes to her, <b>$' + (Math.round(p.price * FEE_PCT) / 100).toFixed(2) + '</b> (' + FEE_PCT + '%) stays with the house.</div>' +
-          '<button class="claimbtn" onclick="payNow(\'' + (p.slug || '') + '\',' + p.price + ')">Pay with PayPal — hold my payment</button>' +
+          '<div id="blockbox-' + (p.slug || '') + '">' + blockHTML(p) + '</div>' +
           '<div id="pp-' + (p.slug || '') + '" style="margin-top:8px"></div>' +
           '<div class="meta">How it works: your PayPal payment is HELD, not sent to her. After the date is over and she verifies it happened, the house takes ' + FEE_PCT + '% and the rest releases to her. No date, no release.</div>' +
           '</div>') +
@@ -969,6 +1089,23 @@
 
   render();
   introPwHint();
+  // Hourly-block countdown: refresh every timer on the page once a second.
+  // When a block runs out, flip it to UP and re-render so the next hour unlocks.
+  setInterval(function(){
+    sweepBlocks();
+    var now = Date.now();
+    var needRender = false;
+    document.querySelectorAll("[data-blocktimer]").forEach(function(el){
+      var ends = +el.getAttribute("data-blocktimer");
+      var left = ends - now;
+      if (left <= 0) { el.textContent = "0:00"; needRender = true; }
+      else {
+        var s = Math.floor(left / 1000);
+        el.textContent = Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+      }
+    });
+    if (needRender) render();
+  }, 1000);
 </script>
 </body>
 </html>
